@@ -1,0 +1,422 @@
+---
+author: "JAYADITYA KHAMESRA"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      warning = FALSE, error = TRUE, fig.height = 3)
+library(tidyverse)
+library(kableExtra)
+library(broman)
+source("../../scripts/viridis.R")
+source("../../scripts/ggprob.R")
+theme_set(theme_minimal())
+```
+
+\newcommand{\E}{\mathsf{E}}
+\newcommand{\Var}{\mathsf{Var}}
+\newcommand{\SD}{\mathsf{SD}}
+\renewcommand{\prob}{\mathsf{P}}
+
+## Assignment 8
+
+#### Due Friday, April 7, 11:59 PM CT
+
+### Preliminaries
+
+- Directories
+    - COURSE/homework/
+    - COURSE/homework/hw08/
+    - COURSE/data/
+    - COURSE/scripts/
+- Files
+  - COURSE/homework/hw08/hw08.Rmd
+  - COURSE/scripts/viridis.R
+  - COURSE/scripts/ggprob.R
+
+### Aims
+
+- Practice the normal distribution and the central limit theorem
+
+
+## Problems
+
+  1. Let $X \sim \text{Normal}(200, 40)$
+so $\mu = 200$ and $\sigma = 40$.
+
+- Find and display the values $x_1$ and $x_2$ such that:
+  - $x_1 < \mu < x_2$;
+  - $x_1$ and $x_2$ are equidistant from $\mu$ ($\mu - x_1 = x_2 - \mu$);
+  - The area under the density between $x_1$ and $x_2$ equals 0.8 ($\prob(x_1 < X < x_2) = 0.8$).
+- Create a graph showing the normal density with the area between $x_1$ and $x_2$ being shaded.
+
+```{r}
+meanu = 200
+sigmasd = 40
+
+x1 = qnorm(0.1, meanu, sigmasd)
+x2 = qnorm(0.9, meanu, sigmasd)
+
+x1
+x2
+gnorm(200,40) +
+  geom_norm_fill(200, 40, x1, x2)
+
+```
+
+
+
+  2. Create a small data frame with variables:
+  
+- `p` equal to the values 0.9, 0.95, 0.975, 0.99, and 0.995;
+- `x` equal to the `p` quantile of the $\text{Normal}(400, 20)$ distribution;
+- `z` equal to the *z-score* of `x`, $z = (x - \mu)/\sigma$.
+
+- Print this full table.
+
+```{r}
+mean1 = 400
+sd1 = 20
+p1 = c(0.9, 0.95, 0.975, 0.99, 0.995)
+x3 = qnorm(p, mean1, sd1)
+z = (x-400)/20
+
+prob_2 = data.frame(p1, x3, z)
+prob_2
+
+```
+
+- If the values of $\mu$ and $\sigma$ were changed and you repeated the problem for the same values of `p`, which of the columns `x` and `z` would change and which would remain the same? Briefly explain.
+
+> X will change because the quantiles are changing 
+> z won't change because it is a standardized value
+
+
+
+
+
+
+  3. Suppose that $X \sim \text{Normal}(200, 40)$.
+  
+  
+- What is $\prob(180 < X < 250)$?
+Create a graph which lets you visualize this probability.
+```{r}
+mean3 = 200
+sd3 = 40
+p3 = pnorm(250, mean3, sd3) - pnorm(180, mean3, sd3)
+p3
+gnorm(mean3, sd3) +
+  geom_norm_fill(mean3, sd3, 180, 250)
+```
+- What is the 0.05 quantile of this distribution?
+Create a graph which lets you visualize this quantile.
+```{r}
+prob_3 = qnorm(0.05, mean3, sd3)
+prob_3
+plot1 = gnorm(mean3, sd3) +
+  geom_norm_fill(mean3, sd3, b = prob_3)
+
+plot1
+```
+
+
+
+  4. Heights in a population of American adult males are approximately normal with a mean of 70 inches and a standard deviation of 3 inches.
+  
+- What proportion of American adult males are taller than two meters tall? (One meter equals 39.37 inches.)
+- What is the 95th percentile of American adult male height?
+
+```{r}
+mean4 = 70
+sd4 = 3
+prob_4 = 1-pnorm(78.74, mean4, sd4)
+prob_4
+x4 = qnorm(0.95, mean4, sd4)
+x4
+```
+
+
+
+
+
+  5. The following code chunk graphs the probabilities of the $\text{Binomial}(50, 0.37)$ distribution with bars of width one centered at the possible values of the random variable
+from the 0.001 to the 0.999 quantiles of the distribution.
+Bars at the 0.90 quantile and to the right are filled in a dark red color ("firebrick") and other values have the bars filled in gray.
+
+```{r}
+n = 50
+p = 0.37
+
+prob5_df = tibble(
+  x = seq(qbinom(0.001, n, p), qbinom(0.999, n, p), 1),
+  prob = dbinom(x, n, p)
+)
+
+plot5 = ggplot(prob5_df, aes(x = x, y = prob)) +
+  geom_col(width = 1, color = "black", fill = "lightgray") +
+  geom_col(width = 1, color = "black", fill = "firebrick",
+           data = prob5_df %>% filter(x >= qbinom(0.90, n, p))) +
+  geom_hline(yintercept = 0) +
+  xlab("x") +
+  ylab("Probability") +
+  ggtitle("Binomial(50, 0.37) Distribution")
+
+plot5
+```
+
+- Create and display a small data frame with the following summary statistics of this distribution:
+    - `mu`, equal to the mean;
+    - `sigma`, equal to the standard deviation;
+    - `a_1`, equal to the 0.90 quantile;
+    - `z_1`, the z-score of `a_1` ($z = (x-\mu)/\sigma$);
+    - `a_2` equal to $a_1 - 0.5$, the left endpoint of a bar of width 1 centered at `a_1`;
+    - `z_2`, the z-score of `a_2`.
+
+```{r}
+n = 50
+p = 0.37
+p5 = tibble(
+  mu = n*p, 
+  sigma = sqrt((n*p)*(1-p)), # X ~ N(18.5, 3.413942)
+  a_1 = qnorm(0.9, mean = mu, sd = sigma), 
+  z_1 = ((a_1 - mu) / sigma), 
+  a_2 = a_1 - 0.5, 
+  z_2 = ((a_2 - mu) / sigma)
+)
+p5
+```
+
+
+- Modify the code to make the plot above by doing the following:
+  - Only display the distribution for $x \ge 20$.
+  - Overlay a blue normal density where the mean and standard deviation match those of the binomial distribution
+  - Fill in the area under the curve to the right of `a_1` with a partly translucent color blue (settings `fill = "blue", alpha=0.5`) so that you see a violet color where this shading overlaps the firebrick red color of the exact binomial probabilities.
+  
+```{r}
+n = 50
+p = 0.37
+
+prob5_df = tibble(
+  x = seq(qbinom(0.001, n, p), qbinom(0.999, n, p), 1),
+  prob = dbinom(x, n, p)
+) 
+
+prob5_df = prob5_df %>% 
+  filter(x >= 20)
+
+prob_5 = prob5_df %>% 
+    summarise(mu = sum(x*prob),
+    standard_deviation = sqrt(sum((x-mu)^2*prob)))
+prob_5
+
+plot5 = ggplot(prob5_df, aes(x = x, y = prob)) +
+  geom_col(width = 1, color = "black", fill = "lightgray") +
+  geom_col(width = 1, color = "black", fill = "firebrick",
+           data = prob5_df %>% filter(x >= qbinom(0.90, n, p))) +
+  geom_norm_density(mu = prob_5$mu, sigma = prob_5$standard_deviation) + 
+  geom_norm_fill(mu = prob_5$mu, sigma = prob_5$standard_deviation, a = p5$a_1, fill = "blue", alpha = 0.5) + 
+  geom_hline(yintercept = 0) +
+  xlab("x") +
+  ylab("Probability") +
+  ggtitle("Binomial(50, 0.37) Distribution")
+
+plot5
+```
+
+- Make another plot by modifying from the previous problem, but fill the area to the right of `a_2` instead of `a_1`.
+
+```{r}
+n = 50
+p = 0.37
+
+prob5_df = tibble(
+  x = seq(qbinom(0.001, n, p), qbinom(0.999, n, p), 1),
+  prob = dbinom(x, n, p)
+) 
+
+prob5_df = prob5_df %>% 
+  filter(x >= 20)
+
+prob_5 = prob5_df %>% 
+    summarise(mu = sum(x*prob),
+    standard_deviation = sqrt(sum((x-mu)^2*prob)))
+prob_5
+plot5 = ggplot(prob5_df, aes(x = x, y = prob)) +
+  geom_col(width = 1, color = "black", fill = "lightgray") +
+  geom_col(width = 1, color = "black", fill = "firebrick",
+           data = prob5_df %>% filter(x >= qbinom(0.90, n, p))) +
+  geom_norm_density(mu = prob_5$mu, sigma = prob_5$standard_deviation) + 
+  geom_norm_fill(mu = prob_5$mu, sigma = prob_5$standard_deviation, a = p5$a_2, fill = "blue", alpha = 0.5) + 
+  geom_hline(yintercept = 0) +
+  xlab("x") +
+  ylab("Probability") +
+  ggtitle("Binomial(50, 0.37) Distribution")
+
+plot5
+```
+  
+- Find:
+  - the exact binomial probability $\prob(X \ge a_1)$ where $a_1$ is the 0.90 quantile. 
+  - the area to the right of `a_1` under the normal density
+  - the area to the right of `a_2` under the normal density
+  
+```{r}
+atleast_a1 = 1 - pbinom(p5$a_1, 50, 0.37)
+atleast_a1 
+right_a1 = 1 - pnorm(p5$a_1, p5$mu, p5$sigma)
+right_a1
+right_a2 = 1 - pnorm(p5$a_2, p5$mu, p5$sigma)
+right_a2
+```
+  
+- Briefly explain why one normal area is closer to the exact binomial calculation than the other, referring to your plots.
+
+> The second graph is a better approximate and a2 rersembles the binomial plot better
+
+
+
+
+
+  6. Suppose you are playing a coin flipping game with a friend, where you suspect the coin your friend provided is not a fair coin.  In fact, you think the probability the coin lands heads is less than 0.5.  To test this, you flip the coin 100 times and observe the coin lands heads 35 times.
+  
+- If you assume the coin is fair (i.e., the probability of the coin landing heads is 0.5), what is the probability of observing 35 heads or fewer?
+
+- How small would $p$ need to be (rounded to the nearest 0.01) for the probability of observing 35 or fewer heads to be at least 0.05?
+
+```{r}
+coin_test = pbinom(35, 100, 0.5)
+coin_test
+probability_values = seq(from = 0, to = 1, by = 0.01)
+prob_6 = tibble(
+  binomial_values = pbinom(35,100,probability_values), probability_values) %>% 
+  filter(binomial_values <= 0.05) %>% 
+  arrange(desc(binomial_values)) %>% 
+  slice_max(binomial_values)
+prob_6
+
+```
+
+- Does it seem plausible that the coin is fair? Briefly explain.
+> The probability of 35 heads is 0.0018, which is not reasonable given that if it were fair (with p = 0.5), the probability would be much greater. (since by that p-value, theoretically 50 out of 100 coin tosses should be heads).
+
+
+#### Solution
+
+
+
+
+
+  7. Suppose that a random variable $U$ is uniformly distributed between $a = 100 - 10\sqrt{3} \doteq `r myround(100 - 10*sqrt(3), 3)`$ and $b = 100 + 10\sqrt{3} \doteq `r myround(100 + 10*sqrt(3), 3)`$.
+For this distribution, $\E(U) = 100$ and $\SD(U) = 10$.
+
+Here is a plot of the density function.
+
+```{r}
+delta = 10*sqrt(3)
+a = 100 - delta
+b = 100 + delta
+
+u_dist = tibble(
+  u = c(a-1, a, a, b, b, b+1),
+  f = c(0, 0, 1/(b-a), 1/(b-a), 0, 0)
+)
+
+ggplot(u_dist, aes(x = u, y = f)) +
+  geom_line(color = "blue") +
+  geom_hline(yintercept = 0)
+
+```
+
+This code chunk will generate four random variables $U_1, \ldots, U_4$ from this uniform density, sort them, print the sample, and then print the mean, $\overline{U}$.
+
+```{r}
+## set the seed to keep the same values when reknitting
+set.seed(2023)
+
+u = runif(4, a, b) %>% sort()
+u
+mean(u)
+
+```
+
+The next chunk of code will repeat this random sampling process $B = 1,000,000$ times and save the sample means, using code form **purrr**.
+
+```{r}
+B = 1000000
+n = 4
+
+delta = 10*sqrt(3)
+a = 100 - delta
+b = 100 + delta
+
+prob7_df = tibble(
+  u_bar = map_dbl(1:B, ~mean(runif(n, a, b))))
+```
+
+
+- Find and display the sample mean and standard deviation (use `sd()`) of the the generated sample means from the previous simulation.
+
+```{r}
+p7 = prob7_df %>%
+  summarize(mu = mean(u_bar),
+            sigma = sd(u_bar))
+p7
+```
+
+- Recall that $\E(U) = 100$ and $\SD(U) = 10$.
+- What are your best guesses for the true values of the theoretical mean ($\E(\overline{U})$) and standard deviation ($\SD(\overline{U})$) of $\overline{U}$ from random samples where the sample size is $n=4$? The true values are nice round numbers.
+
+> The best guess is 100 or 50
+
+
+
+
+  8. Using the simulated data from the previous problem:
+  
+- Estimate the probability that $\prob(96 < \overline{U} < 104)$ by finding the proportion of simulated sample means between these two values.
+
+```{r}
+p8 = prob7_df %>%
+  summarize(p8a = mean(u_bar > 96 & u_bar<104))
+p8
+
+```
+
+- Compare this estimate to the area under a normal density with mean and standard deviation equal to the best guess theoretical values from the previous problem.
+
+```{r}
+p8b = prob7_df %>%
+  summarize(mu = mean(u_bar),
+            sigma = sd(u_bar),
+            p = mean(u_bar>96 & u_bar<104))
+p8b
+p8c = tibble(
+  mu = p8b$mu, 
+  sigma = p8b$sigma)
+p8c
+```
+
+- Make the following graph:
+    - Use `geom_density()` to make a density plot of the 1,000,000 sampled means. Use the settings `color = "blue", alpha = 0.5` so it is partly translucent.
+    - Overlay a normal density curve with the same mean and standard deviation and settings `color = "red", alpha = 0.5`.
+    - Add dashed black vertical lines at 96 and 104.
+    
+```{r}
+ggplot(prob7_df, aes(x=u_bar)) +
+  geom_density(color = "blue", alpha = 0.5) +
+  geom_norm_density(p8b$mu, p8b$sigma, color="red", alpha = 0.5) +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = c(96,104), linetype="dashed")
+```
+    
+- Briefly explain why the normal approximation is not equal to the probability estimated by simulation with reference to the graph.
+
+> There will be a small departure from the standard approximation because the simulation considers the sample mean and is not totally theoretical.
+
+- Based on the graph, for about what value of $a$ will the normal approximate probability of $\prob(100 - a < \overline{U} < 100 + a)$ (area under the red curve) be the furthest from the true probability (close to the area under the blue curve). Briefly explain why.
+
+> Since the two curves are most distant from one another between the numbers of 97.5 and 102.5, we can estimate that 'a' is roughly 2.5.
+
+
